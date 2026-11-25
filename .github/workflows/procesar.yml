@@ -24,6 +24,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add datos.geojson
+          git add datos.geojson extraidos
           git diff --staged --quiet || git commit -m "Actualizar datos.geojson"
           git push
