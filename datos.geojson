@@ -6,6 +6,67 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
+     -84.128678,
+     10.012378
+    ]
+   },
+   "properties": {
+    "tipo": "Sin salida",
+    "categoria": "Otros",
+    "fecha": "2026-11-24",
+    "hora": "22:59:54",
+    "traza": "2026-11-24_22-59-00",
+    "fotos": []
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -84.128678,
+     10.012378
+    ]
+   },
+   "properties": {
+    "tipo": "prueba",
+    "categoria": "Otros",
+    "fecha": "2026-11-24",
+    "hora": "23:00:07",
+    "traza": "2026-11-24_22-59-00",
+    "fotos": []
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -84.128702,
+      10.012387
+     ],
+     [
+      -84.128667,
+      10.012377
+     ]
+    ]
+   },
+   "properties": {
+    "tipo": "Traza",
+    "categoria": "Recorrido",
+    "fecha": "2026-11-24",
+    "hora": "22:59:06",
+    "fin": "22:59:11",
+    "traza": "2026-11-24_22-59-00",
+    "fotos": []
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
      -84.128375,
      10.012479
     ]
