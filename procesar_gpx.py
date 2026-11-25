@@ -1,26 +1,19 @@
-"""
-procesar_gpx.py
-Lee todos los archivos .gpx del repositorio (los que sube OSMTracker)
-y genera un único archivo datos.geojson que consume el mapa (index.html).
-Solo usa librerías que ya trae Python, no hay que instalar nada.
-"""
 import glob
 import json
 import math
 import os
+import re
 import xml.etree.ElementTree as ET
+import zipfile
 from datetime import datetime, timedelta
 
-# ---------------------------------------------------------------
-# CONFIGURACIÓN (lo que probablemente van a querer modificar)
-# ---------------------------------------------------------------
 SALIDA = "datos.geojson"
-HORAS_UTC = -6            # Costa Rica = UTC-6 todo el año
-MAX_SEG_FOTO = 120        # una foto se pega a un punto si pasaron <= 120 s
-MAX_M_FOTO = 30           # ... y si está a <= 30 m
-MIN_M_TRAZA = 3           # la traza guarda un punto cada 3 m (menos peso)
+CARPETA_EXTRAIDOS = "extraidos"
+HORAS_UTC = -6
+MAX_SEG_FOTO = 120
+MAX_M_FOTO = 30
+MIN_M_TRAZA = 3
 
-# Nombre del botón en OSMTracker  ->  categoría del mapa
 CATEGORIAS = {
     "Acera": "Aceras",
     "fin de la acera": "Aceras",
@@ -40,16 +33,28 @@ NS = {"g": "http://www.topografix.com/GPX/1/1"}
 
 
 def hora_local(texto_utc):
-    """'2026-10-04T16:27:14Z' -> datetime en hora de Costa Rica."""
     dt = datetime.strptime(texto_utc, "%Y-%m-%dT%H:%M:%SZ")
     return dt + timedelta(hours=HORAS_UTC)
 
 
 def distancia_m(lat1, lon1, lat2, lon2):
-    """Distancia aproximada en metros entre dos coordenadas."""
     dy = (lat2 - lat1) * 111_320
     dx = (lon2 - lon1) * 111_320 * math.cos(math.radians(lat1))
     return math.hypot(dx, dy)
+
+
+def extraer_zips():
+    os.makedirs(CARPETA_EXTRAIDOS, exist_ok=True)
+    for ruta in sorted(glob.glob("**/*.zip", recursive=True)):
+        if ruta.startswith((".", CARPETA_EXTRAIDOS + "/")):
+            continue
+        nombre = re.sub(r"[^A-Za-z0-9._-]", "_", os.path.splitext(os.path.basename(ruta))[0])
+        destino = os.path.join(CARPETA_EXTRAIDOS, nombre)
+        if os.path.isdir(destino):
+            continue
+        with zipfile.ZipFile(ruta) as z:
+            base = os.path.realpath(destino)
+            z.extractall(destino)
 
 
 def procesar_gpx(ruta):
@@ -57,9 +62,8 @@ def procesar_gpx(ruta):
     carpeta = os.path.dirname(ruta)
     nombre_traza = os.path.splitext(os.path.basename(ruta))[0]
     features = []
-    ultimo = None  # último punto que NO es foto
+    ultimo = None
 
-    # ---- Waypoints (los botones) ----
     for w in raiz.findall("g:wpt", NS):
         lat, lon = float(w.get("lat")), float(w.get("lon"))
         tipo = w.find("g:name", NS).text.strip()
@@ -68,9 +72,6 @@ def procesar_gpx(ruta):
         archivo = enlace.get("href") if enlace is not None else None
         ruta_archivo = (os.path.join(carpeta, archivo).replace("\\", "/")
                         if archivo else None)
-
-        # OSMTracker guarda cada foto como un waypoint aparte llamado "Foto".
-        # Si es cercano en tiempo y espacio al punto anterior, se la pegamos.
         if tipo == "Foto" and ultimo is not None:
             seg = (t - ultimo["t"]).total_seconds()
             dist = distancia_m(lat, lon, ultimo["lat"], ultimo["lon"])
@@ -95,7 +96,6 @@ def procesar_gpx(ruta):
         if tipo != "Foto":
             ultimo = {"t": t, "lat": lat, "lon": lon, "props": props}
 
-    # ---- Trazas (el recorrido) ----
     for trk in raiz.findall("g:trk", NS):
         coords, tiempos = [], []
         for pt in trk.iter("{%s}trkpt" % NS["g"]):
@@ -124,19 +124,21 @@ def procesar_gpx(ruta):
 
 
 def main():
+    extraer_zips()
     rutas = sorted(
         r for r in glob.glob("**/*.gpx", recursive=True)
         if not r.startswith(".")
     )
     todos = []
+    vistos = set()
     for ruta in rutas:
-        print("Procesando", ruta)
+        nombre = os.path.basename(ruta)
+        vistos.add(nombre)
         todos.extend(procesar_gpx(ruta))
 
     geojson = {"type": "FeatureCollection", "features": todos}
     with open(SALIDA, "w", encoding="utf-8") as f:
         json.dump(geojson, f, ensure_ascii=False, indent=1)
-    print(f"Listo: {len(rutas)} GPX -> {len(todos)} elementos en {SALIDA}")
 
 
 if __name__ == "__main__":
