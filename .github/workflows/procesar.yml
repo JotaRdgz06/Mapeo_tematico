@@ -1,0 +1,29 @@
+name: Procesar GPX
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  procesar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generar datos.geojson
+        run: python procesar_gpx.py
+
+      - name: Guardar cambios
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add datos.geojson
+          git diff --staged --quiet || git commit -m "Actualizar datos.geojson"
+          git push
