@@ -1,7 +1,11 @@
-document.addEventListener('datos-listos', function () {
+document.addEventListener('datos-listos', function (evento) {
+  // Respaldo: si visualizaciones.js todavía no creó capaTrazas,
+  // se crea aquí con las trazas (LineString) de los datos.
   if (!window.capaTrazas) {
-    console.warn('filtro-temporal: no existe capaTrazas, no se crea el filtro');
-    return;
+    window.capaTrazas = L.geoJSON(evento.detail, {
+      filter: function (f) { return f.geometry.type === 'LineString'; },
+      style: { color: COLORES['Recorrido'], weight: 4, opacity: 0.8 }
+    }).addTo(mapa);
   }
 
   // Lista completa: hay que guardarla ANTES de ocultar nada,
